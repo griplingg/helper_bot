@@ -3,6 +3,7 @@ from telegram.ext import Updater, MessageHandler, Filters
 from telegram.ext import CallbackContext, CommandHandler
 from telegram.ext import CommandHandler
 from telegram import ReplyKeyboardMarkup
+import random
 
 
 def start(update, context):
@@ -20,7 +21,7 @@ def main():
     dp.add_handler(CommandHandler("motivation", motivation))
     dp.add_handler(CommandHandler("start", start))
     dp.add_handler(CommandHandler("settings", settings))
-    dp.add_handler(text_handler)
+    dp.add_handler(CommandHandler("help", help))
     updater.start_polling()
     updater.idle()
 
@@ -31,8 +32,12 @@ def help(update, context):
 
 
 def motivation(update, context):
-    update.message.reply_text(
-        "функция  разработке")
+    citati = ['Жизнь — это скульптура, которую вы создаете, когда делаете ошибки и учитесь на них',
+              'Секрет успеха — сделать первый шаг',
+              'Единственный способ найти выход — это пройти весь путь',
+              'Сколь высоких целей вы бы ни добились, нужно ставить новые ещё выше']
+    number = random.randint(0, len(citati) - 1)
+    update.message.reply_text(citati[number])
 
 
 def settings(update, context):
