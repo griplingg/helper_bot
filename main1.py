@@ -2,6 +2,7 @@ from telegram.ext import Updater, MessageHandler, Filters
 from telegram.ext import CallbackContext, CommandHandler
 from telegram.ext import CommandHandler, ConversationHandler
 from data import db_session
+from data.citati import Citat
 from telegram import ReplyKeyboardMarkup
 import random
 import requests
@@ -20,6 +21,7 @@ def main():
     updater = Updater('5103219044:AAGIibAfCpvXjLp8el1qy9T67bctCZj84iQ', use_context=True)
     dp = updater.dispatcher
     dp.add_handler(CommandHandler("settings", settings))
+    dp.add_handler(CommandHandler("start", start))
     dp.add_handler(CommandHandler("help", help))
     conv_handler = ConversationHandler(
         entry_points=[CommandHandler('motivation', motivation)],
@@ -28,7 +30,15 @@ def main():
         },
         fallbacks=[CommandHandler('menu', menu)]
     )
+    conv_handler2 = ConversationHandler(
+        entry_points=[CommandHandler('quote', quote)],
+        states={
+            2: [MessageHandler(Filters.text & ~Filters.command, add_quote, pass_user_data=True)],
+        },
+        fallbacks=[CommandHandler('menu', menu)]
+    )
     dp.add_handler(conv_handler)
+    dp.add_handler(conv_handler2)
     dp.add_handler(CommandHandler("weather", weather))
     updater.start_polling()
     updater.idle()
@@ -36,7 +46,7 @@ def main():
 
 def start(update, context):
     reply_keyboard = [['/motivation', '/settings'],
-                      ['/help']]
+                      ['/help', '/quote']]
     markup = ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=False)
     update.message.reply_text(
         "Я бот-помощник, выберите интересующую вас функцию",
@@ -51,8 +61,13 @@ def help(update, context):
 
 
 def menu(update, context):
+    reply_keyboard = [['/motivation', '/settings'],
+                      ['/help', '/quote']]
+    markup = ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=False)
     update.message.reply_text(
-        "функция  разработке")
+        "Я бот-помощник, выберите интересующую вас функцию",
+        reply_markup=markup
+    )
 
 
 def citati(update, context):
@@ -63,6 +78,10 @@ def citati(update, context):
                  'Секрет успеха — сделать первый шаг',
                  'Единственный способ найти выход — это пройти весь путь',
                  'Сколь высоких целей вы бы ни добились, нужно ставить новые ещё выше']
+        #rand = random.randint(1, 4)
+        #db_sess = db_session.create_session()
+        #for name in db_sess.query(Citat).filter(Citat.id == rand):
+           #print()
         update.message.reply_text(random.choice(citat))
     elif context.user_data['locality'] == 'картинка':
         jp = open('images/c1.jpg', 'rb')
@@ -80,6 +99,21 @@ def motivation(update, context):
         "Если хотите получить текстовую цитату, то введите 'текст',\n"
         "если хотите получить картинку, то введите 'картинка'")
     return 1
+
+
+def quote(update, context):
+    update.message.reply_text('Пришлите текст цитаты, чтобы добавить ее в базу')
+    return 2
+
+
+def add_quote(update, context):
+    context.user_data['locality'] = update.message.text
+    db_sess = db_session.create_session()
+    newquote = Citat(name=context.user_data['locality'])
+    db_sess.add(newquote)
+    db_sess.commit()
+    update.message.reply_text('Успешно!')
+    return ConversationHandler.END
 
 
 def weather(update, context):
