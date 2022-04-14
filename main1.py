@@ -74,15 +74,10 @@ def citati(update, context):
     context.user_data['locality'] = update.message.text
     print(context.user_data['locality'])
     if context.user_data['locality'] == 'текст':
-        citat = ['Жизнь — это скульптура, которую вы создаете, когда делаете ошибки и учитесь на них',
-                 'Секрет успеха — сделать первый шаг',
-                 'Единственный способ найти выход — это пройти весь путь',
-                 'Сколь высоких целей вы бы ни добились, нужно ставить новые ещё выше']
-        #rand = random.randint(1, 4)
-        #db_sess = db_session.create_session()
-        #for name in db_sess.query(Citat).filter(Citat.id == rand):
-           #print()
-        update.message.reply_text(random.choice(citat))
+        db_sess = db_session.create_session()
+        base = list(db_sess.query(Citat.name).all())
+        print(base)
+        update.message.reply_text(random.choice(base)[0])
     elif context.user_data['locality'] == 'картинка':
         jp = open('images/c1.jpg', 'rb')
         context.bot.send_photo(
