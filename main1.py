@@ -3,12 +3,14 @@ from telegram.ext import CallbackContext, CommandHandler
 from telegram.ext import CommandHandler, ConversationHandler
 from data import db_session
 from data.citati import Citat
+from data.notes import Note
 from telegram import ReplyKeyboardMarkup
 import random
 import requests
 import logging
 
-db_session.global_init("db/citati.db")
+db_session.global_init("db/notes.db")
+# db_session.global_init("db/citati.db")
 
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.DEBUG
@@ -37,8 +39,16 @@ def main():
         },
         fallbacks=[CommandHandler('menu', menu)]
     )
+    conv_handler3 = ConversationHandler(
+        entry_points=[CommandHandler('new_note', new_note)],
+        states={
+            "get_text": [MessageHandler(Filters.text & ~Filters.command, get_text, pass_user_data=True)],
+        },
+        fallbacks=[CommandHandler('save_note', save_note)]
+    )
     dp.add_handler(conv_handler)
     dp.add_handler(conv_handler2)
+    dp.add_handler(conv_handler3)
     dp.add_handler(CommandHandler("weather", weather))
     updater.start_polling()
     updater.idle()
@@ -154,6 +164,32 @@ def weather(update, context):
         print("Ошибка выполнения запроса")
         print(response)
         print("Http статус:", response.status_code, "(", response.reason, ")")
+
+
+def new_note(update, context):
+    update.message.reply_text("Введите новую запись")
+    context.user_data["new_note"] = ''
+    return "get_text"
+
+
+def save_note(update, context):
+    db_sess = db_session.create_session()
+    new = Note(text=context.user_data["new_note"], username=update.message.from_user["username"])
+    db_sess.add(new)
+    db_sess.commit()
+    update.message.reply_text('Запись сохранена')
+    context.user_data.clear()
+    return ConversationHandler.END
+
+
+def get_text(update, context):
+    context.user_data["new_note"] += update.message.text
+    context.user_data["new_note"] += "|||"
+    return "get_text"
+
+
+def view_note(update, context):
+    pass
 
 
 def settings(update, context):
