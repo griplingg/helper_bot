@@ -1,9 +1,9 @@
 from telegram.ext import Updater, MessageHandler, Filters
 from telegram.ext import CallbackContext, CommandHandler
-from telegram.ext import CommandHandler, ConversationHandler
+from telegram.ext import CommandHandler, ConversationHandler, CallbackQueryHandler
 from data import db_session
 from data.citati import Citat
-from telegram import ReplyKeyboardMarkup
+from telegram import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardButton, InlineKeyboardMarkup
 import random
 import requests
 import logging
@@ -20,6 +20,7 @@ logger = logging.getLogger(__name__)
 def main():
     updater = Updater('5103219044:AAGIibAfCpvXjLp8el1qy9T67bctCZj84iQ', use_context=True)
     dp = updater.dispatcher
+    dp.add_handler(CallbackQueryHandler(button))
     dp.add_handler(CommandHandler("settings", settings))
     dp.add_handler(CommandHandler("start", start))
     dp.add_handler(CommandHandler("help", help))
@@ -47,11 +48,29 @@ def main():
 def start(update, context):
     reply_keyboard = [['/motivation', '/settings'],
                       ['/help', '/quote']]
-    markup = ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=False)
-    update.message.reply_text(
-        "Я бот-помощник, выберите интересующую вас функцию",
-        reply_markup=markup
-    )
+    #markup = ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=False)
+    keyboard = [[
+            InlineKeyboardButton("о боте", callback_data='about'),
+            InlineKeyboardButton("помощь", callback_data='help'),
+            InlineKeyboardButton("список функций", callback_data='function_list')]]
+
+    reply_markup = InlineKeyboardMarkup(keyboard)
+
+    update.message.reply_text('Я бот-помощник, выберите интересующую вас функцию', reply_markup=reply_markup)
+
+
+def button(update, CallbackContext):
+    keyboard = [[
+        InlineKeyboardButton("в меню", callback_data='menu')]]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    callback = update.callback_query
+    callback.answer()
+    if callback.data == 'about':
+        callback.message.reply_text('какой-то текст', reply_markup=reply_markup)
+    if callback.data == 'help':
+        callback.message.reply_text("памагити", reply_markup=reply_markup)
+    if callback.data == 'function_list':
+        callback.message.reply_text("памагити", reply_markup=reply_markup)
 
 
 def help(update, context):
@@ -85,6 +104,7 @@ def citati(update, context):
             jp)
     else:
         update.message.reply_text('что-то пошло не так, попробуйте еще раз;)')
+        citati()
     context.user_data.clear()
     return ConversationHandler.END
 
@@ -102,13 +122,17 @@ def quote(update, context):
 
 
 def add_quote(update, context):
-    context.user_data['locality'] = update.message.text
-    db_sess = db_session.create_session()
-    newquote = Citat(name=context.user_data['locality'])
-    db_sess.add(newquote)
-    db_sess.commit()
-    update.message.reply_text('Успешно!')
-    return ConversationHandler.END
+    try:
+        context.user_data['locality'] = update.message.text
+        db_sess = db_session.create_session()
+        newquote = Citat(name=context.user_data['locality'])
+        db_sess.add(newquote)
+        db_sess.commit()
+        update.message.reply_text('Успешно!')
+        return ConversationHandler.END
+    except Exception:
+        update.message.reply_text('Попробуйте снова')
+        add_quote()
 
 
 def weather(update, context):

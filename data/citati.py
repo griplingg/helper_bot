@@ -9,6 +9,7 @@ class Citat(SqlAlchemyBase):
     id = sqlalchemy.Column(sqlalchemy.Integer,
                            primary_key=True, autoincrement=True)
     name = sqlalchemy.Column(sqlalchemy.String, nullable=True)
+    #author = sqlalchemy.Column(sqlalchemy.String, nullable=True)
 
     def txt(self):
         return self.name
