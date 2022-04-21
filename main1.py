@@ -68,14 +68,37 @@ def button(update, CallbackContext):
     if callback.data == 'about':
         callback.message.reply_text('какой-то текст', reply_markup=reply_markup)
     if callback.data == 'help':
-        callback.message.reply_text("памагити", reply_markup=reply_markup)
+        keyboard3 = [[
+            InlineKeyboardButton("погода", callback_data='help_weathers'),
+            InlineKeyboardButton("заметки", callback_data='help_notes'),
+            InlineKeyboardButton("мотивация", callback_data='help_motivation'),
+            InlineKeyboardButton("добавить цитату", callback_data='help_quote')]]
+        reply_markup3 = InlineKeyboardMarkup(keyboard3)
+        callback = update.callback_query
+        callback.answer()
+        callback.message.reply_text('Выберите функцию c которой нужна помощь:', reply_markup=reply_markup3)
+    if callback.data == 'help_weather':
+        callback.message.reply_text("для вызова функции напишите: '/weather ваш город',\n"
+                                    "например:  '/weather Владимир'"
+                                    "если функция не отвечает убедитесь в правильности вызова",
+                                    reply_markup=reply_markup)
+    if callback.data == 'help_notes':
+        callback.message.reply_text("описание скоро появится", reply_markup=reply_markup)
+    if callback.data == 'help_motivation':
+        callback.message.reply_text("для вызова функции напишите: '/motivation'  и следуйте дальнейшим инструкциям,\n"
+                                    "если функция не отвечает убедитесь в правильности вызова",
+                                    reply_markup=reply_markup)
+    if callback.data == 'help_quote':
+        callback.message.reply_text("для вызова функции напишите: '/quote',\n"
+                                    "если функция не добавляет цитату убедитесь в верности формата записи",
+                                    reply_markup=reply_markup)
     if callback.data == 'function_list':
         keyboard2 = [[
             InlineKeyboardButton("погода", callback_data='list_weather'),
             InlineKeyboardButton("заметки", callback_data='list_notes'),
             InlineKeyboardButton("мотивация", callback_data='list_motivation'),
             InlineKeyboardButton("добавить цитату", callback_data='list_quote'),
-            InlineKeyboardButton("настройки", callback_data='list_settings'),]]
+            InlineKeyboardButton("настройки", callback_data='list_settings')]]
         reply_markup2 = InlineKeyboardMarkup(keyboard2)
         callback = update.callback_query
         callback.answer()
@@ -105,7 +128,6 @@ def button(update, CallbackContext):
         callback = update.callback_query
         callback.answer()
         callback.message.reply_text('Я бот-помощник, выберите интересующую вас функцию', reply_markup=reply_markup1)
-
 
 
 def help(update, context):
