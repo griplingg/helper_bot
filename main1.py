@@ -46,9 +46,6 @@ def main():
 
 
 def start(update, context):
-    reply_keyboard = [['/motivation', '/settings'],
-                      ['/help', '/quote']]
-    #markup = ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=False)
     keyboard = [[
             InlineKeyboardButton("о боте", callback_data='about'),
             InlineKeyboardButton("помощь", callback_data='help'),
@@ -66,10 +63,12 @@ def button(update, CallbackContext):
     callback = update.callback_query
     callback.answer()
     if callback.data == 'about':
-        callback.message.reply_text('какой-то текст', reply_markup=reply_markup)
+        callback.message.reply_text('этот бот умеет выполнять многие полезные задачи, '
+                                    'подробнее о его функциях можно прочитать в разделе "помощь"',
+                                    reply_markup=reply_markup)
     if callback.data == 'help':
         keyboard3 = [[
-            InlineKeyboardButton("погода", callback_data='help_weathers'),
+            InlineKeyboardButton("погода", callback_data='help_weather'),
             InlineKeyboardButton("заметки", callback_data='help_notes'),
             InlineKeyboardButton("мотивация", callback_data='help_motivation'),
             InlineKeyboardButton("добавить цитату", callback_data='help_quote')]]
@@ -79,17 +78,23 @@ def button(update, CallbackContext):
         callback.message.reply_text('Выберите функцию c которой нужна помощь:', reply_markup=reply_markup3)
     if callback.data == 'help_weather':
         callback.message.reply_text("для вызова функции напишите: '/weather ваш город',\n"
-                                    "например:  '/weather Владимир'"
+                                    "например:  '/weather Владимир' \n"
+                                    "если функция не отвечает убедитесь, что вы ввели название города \n"
                                     "если функция не отвечает убедитесь в правильности вызова",
                                     reply_markup=reply_markup)
     if callback.data == 'help_notes':
         callback.message.reply_text("описание скоро появится", reply_markup=reply_markup)
     if callback.data == 'help_motivation':
         callback.message.reply_text("для вызова функции напишите: '/motivation'  и следуйте дальнейшим инструкциям,\n"
-                                    "если функция не отвечает убедитесь в правильности вызова",
+                                    "если функция не отвечает убедитесь в правильности вызова\n"
+                                    "возможные причины ошибок:\n"
+                                    "-неправильный ввод команды\n"
+                                    "- слова, написанные не по образцу\n"
+                                    "-кавычки при вводе\n",
                                     reply_markup=reply_markup)
     if callback.data == 'help_quote':
         callback.message.reply_text("для вызова функции напишите: '/quote',\n"
+                                    "если не работает вызов функции, убедитесь, что она вызывается правильно\n"
                                     "если функция не добавляет цитату убедитесь в верности формата записи",
                                     reply_markup=reply_markup)
     if callback.data == 'function_list':
@@ -98,27 +103,38 @@ def button(update, CallbackContext):
             InlineKeyboardButton("заметки", callback_data='list_notes'),
             InlineKeyboardButton("мотивация", callback_data='list_motivation'),
             InlineKeyboardButton("добавить цитату", callback_data='list_quote'),
+            InlineKeyboardButton("меню", callback_data='list_menu'),
             InlineKeyboardButton("настройки", callback_data='list_settings')]]
         reply_markup2 = InlineKeyboardMarkup(keyboard2)
         callback = update.callback_query
         callback.answer()
-        callback.message.reply_text('Выберите функцию о которой хотите узнать:', reply_markup=reply_markup2)
+        callback.message.reply_text('Выберите функцию о которой хотите узнать:',
+                                    reply_markup=reply_markup2)
     if callback.data == 'list_weather':
         callback.message.reply_text("Функция позволит узнать о погоде и подскажет как сегодня одеться\n"
                                     "для вызова функции напишите: '/weather ваш город',\n"
-                                    "например:  '/weather Владимир'", reply_markup=reply_markup)
+                                    "например:  '/weather Владимир'",
+                                    reply_markup=reply_markup)
     if callback.data == 'list_notes':
-        callback.message.reply_text("описание скоро появится", reply_markup=reply_markup)
+        callback.message.reply_text("описание скоро появится",
+                                    reply_markup=reply_markup)
     if callback.data == 'list_motivation':
         callback.message.reply_text("Функция выдает случайную цитату из списка\n"
                                     "для вызова функции напишите: '/motivation'  и следуйте дальнейшим инструкциям,\n"
                                     "вы можете получить текстовую цитату или цитату с"
-                                    " картинкой", reply_markup=reply_markup)
+                                    " картинкой",
+                                    reply_markup=reply_markup)
     if callback.data == 'list_quote':
         callback.message.reply_text("Функция позволяет добавить свою текстовую цитату\n"
-                                    "для вызова функции напишите: '/quote',\n", reply_markup=reply_markup)
+                                    "для вызова функции напишите: '/quote',\n",
+                                    reply_markup=reply_markup)
     if callback.data == 'list_settings':
-        callback.message.reply_text("функция и ее описание скоро появятся 🔧", reply_markup=reply_markup)
+        callback.message.reply_text("функция и ее описание скоро появятся 🔧",
+                                    reply_markup=reply_markup)
+    if callback.data == 'list_menu':
+        callback.message.reply_text("Функция возвращения в основное меню\n"
+                                    "для вызова функции напишите: '/menu',\n",
+                                    reply_markup=reply_markup)
     if callback.data == 'menu':
         keyboard1 = [[
             InlineKeyboardButton("о боте", callback_data='about'),
@@ -137,44 +153,56 @@ def help(update, context):
 
 
 def menu(update, context):
-    reply_keyboard = [['/motivation', '/settings'],
-                      ['/help', '/quote']]
-    markup = ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=False)
-    update.message.reply_text(
-        "Я бот-помощник, выберите интересующую вас функцию",
-        reply_markup=markup
-    )
+    keyboard = [[
+        InlineKeyboardButton("о боте", callback_data='about'),
+        InlineKeyboardButton("помощь", callback_data='help'),
+        InlineKeyboardButton("список функций", callback_data='function_list')]]
+
+    reply_markup = InlineKeyboardMarkup(keyboard)
+
+    update.message.reply_text('Я бот-помощник, выберите интересующую вас функцию', reply_markup=reply_markup)
 
 
 def citati(update, context):
+    keyboard = [[
+        InlineKeyboardButton("в меню", callback_data='menu')]]
+    reply_markup = InlineKeyboardMarkup(keyboard)
     context.user_data['locality'] = update.message.text
     print(context.user_data['locality'])
     if context.user_data['locality'] == 'текст':
         db_sess = db_session.create_session()
         base = list(db_sess.query(Citat.name).all())
         print(base)
-        update.message.reply_text(random.choice(base)[0])
+        update.message.reply_text(random.choice(base)[0], reply_markup=reply_markup)
     elif context.user_data['locality'] == 'картинка':
         jp = open('images/c1.jpg', 'rb')
         context.bot.send_photo(
             update.message.chat_id,
             jp)
+        update.message.reply_text('вернуться в меню', reply_markup=reply_markup)
     else:
-        update.message.reply_text('что-то пошло не так, попробуйте еще раз;)')
+        update.message.reply_text('что-то пошло не так, попробуйте еще раз;)', reply_markup=reply_markup)
         citati()
     context.user_data.clear()
     return ConversationHandler.END
 
 
 def motivation(update, context):
+    keyboard = [[
+        InlineKeyboardButton("в меню", callback_data='menu')]]
+    reply_markup = InlineKeyboardMarkup(keyboard)
     update.message.reply_text(
         "Если хотите получить текстовую цитату, то введите 'текст',\n"
-        "если хотите получить картинку, то введите 'картинка'")
+        "если хотите получить картинку, то введите 'картинка'", reply_markup=reply_markup)
     return 1
 
 
 def quote(update, context):
-    update.message.reply_text('Пришлите текст цитаты, чтобы добавить ее в базу')
+    keyboard = [[
+        InlineKeyboardButton("в меню", callback_data='menu')]]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    update.message.reply_text('Пришлите текст цитаты, чтобы добавить ее в базу',
+                              reply_markup=reply_markup)
     return 2
 
 
@@ -238,7 +266,10 @@ def weather(update, context):
 
 
 def settings(update, context):
-    update.message.reply_text("функция  разработке")
+    keyboard = [[
+        InlineKeyboardButton("в меню", callback_data='menu')]]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    update.message.reply_text("функция  разработке", reply_markup=reply_markup)
 
 
 if __name__ == '__main__':
