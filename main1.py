@@ -1,10 +1,13 @@
-from telegram.ext import Updater, MessageHandler, Filters
+import datetime
+
+import telegram
+from telegram.ext import Updater, MessageHandler, Filters, CallbackQueryHandler
 from telegram.ext import CallbackContext, CommandHandler
 from telegram.ext import CommandHandler, ConversationHandler
 from data import db_session
 from data.citati import Citat
 from data.notes import Note
-from telegram import ReplyKeyboardMarkup
+from telegram import ReplyKeyboardMarkup, InlineKeyboardMarkup, InlineKeyboardButton
 import random
 import requests
 import logging
@@ -17,6 +20,12 @@ logging.basicConfig(
 )
 
 logger = logging.getLogger(__name__)
+
+
+# Stages
+FIRST, SECOND = range(2)
+# Callback data
+ONE, TWO, THREE, FOUR = range(4)
 
 
 def main():
@@ -46,10 +55,22 @@ def main():
         },
         fallbacks=[CommandHandler('save_note', save_note)]
     )
+    conv_handler4 = ConversationHandler(
+        entry_points=[CommandHandler('read_all_notes', read_all_notes)],
+        states={
+            FIRST: [
+                CallbackQueryHandler(open, pattern='^' + "open" + '$'),
+                CallbackQueryHandler(open, pattern='^' + "back" + '$')
+            ],
+        },
+        fallbacks=[CommandHandler('read_all_notes', read_all_notes)],
+    )
     dp.add_handler(conv_handler)
     dp.add_handler(conv_handler2)
     dp.add_handler(conv_handler3)
+    dp.add_handler(conv_handler4)
     dp.add_handler(CommandHandler("weather", weather))
+    dp.add_handler(CommandHandler("read_note", read_note))
     updater.start_polling()
     updater.idle()
 
@@ -184,12 +205,66 @@ def save_note(update, context):
 
 def get_text(update, context):
     context.user_data["new_note"] += update.message.text
-    context.user_data["new_note"] += "|||"
+    context.user_data["new_note"] += "\n\n"
     return "get_text"
 
 
-def view_note(update, context):
-    pass
+def read_all_notes(update, context):
+    db_sess = db_session.create_session()
+    base = list(db_sess.query(Note.text, Note.date).filter(Note.username == update.message.from_user["username"]))
+    print(base)
+    context.user_data['base'] = base
+    c = len(base)
+    if c == 0:
+        update.message.reply_text("у вас нет записей")
+    elif c == 1:
+        update.message.reply_text(f"Запись от {base[0][1].strftime('%d/%m/%Y, %H:%M')}\n"
+                                  f"{base[0][0]}")
+    elif c <= 4:
+        keyboard = [[]]
+        for i in range(1, c + 1):
+            keyboard[0].append(InlineKeyboardButton(str(i), callback_data="open"))
+    elif c >= 4:
+        pass
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    # Send message with text and appended InlineKeyboard
+    update.message.reply_text("Выберите запись", reply_markup=reply_markup)
+    # Tell ConversationHandler that we're in state `FIRST` now
+    return FIRST
+
+
+def open(update, context):
+    """Show new choice of buttons"""
+    print("---------------------------------")
+    query = update.callback_query
+    print()
+    base = context.user_data['base']
+    query.answer()
+    st = f"Запись от {base[0][1].strftime('%d/%m/%Y, %H:%M')}\n{base[0][0]}"
+    keyboard = [
+        [
+            InlineKeyboardButton("назад", callback_data="back"),
+        ]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    query.edit_message_text(
+        text=st, reply_markup=reply_markup
+    )
+    return FIRST
+
+
+def read_note(update, context):
+    date = [int(x) for x in context.args[0].split('.')]
+    dt = datetime.datetime(date[2], date[1], date[0], 0, 0, 0)
+    dtm = datetime.datetime(date[2], date[1], date[0], 23, 59, 59, 0)
+    db_sess = db_session.create_session()
+    base = list(db_sess.query(Note.text, Note.date).filter(Note.username == update.message.from_user["username"], Note.date >= dt, Note.date >= dt))
+    for i in range(len(base)):
+        context.bot.send_message(
+            text=f"""_Запись от {base[i][1].strftime('%d.%m.%Y, %H:%M')}_
+            \n-----------------------------\n{base[i][0]}""",
+            parse_mode=telegram.ParseMode.MARKDOWN, chat_id=update.message.chat_id
+        )
 
 
 def settings(update, context):
