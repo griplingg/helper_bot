@@ -11,6 +11,8 @@ from telegram import ReplyKeyboardMarkup, InlineKeyboardMarkup, InlineKeyboardBu
 import random
 import requests
 import logging
+from telegram import InlineKeyboardButton
+from telegram_bot_pagination import InlineKeyboardPaginator
 
 db_session.global_init("db/notes.db")
 # db_session.global_init("db/citati.db")
@@ -20,12 +22,6 @@ logging.basicConfig(
 )
 
 logger = logging.getLogger(__name__)
-
-
-# Stages
-FIRST, SECOND = range(2)
-# Callback data
-ONE, TWO, THREE, FOUR = range(4)
 
 
 def main():
@@ -55,20 +51,11 @@ def main():
         },
         fallbacks=[CommandHandler('save_note', save_note)]
     )
-    conv_handler4 = ConversationHandler(
-        entry_points=[CommandHandler('read_all_notes', read_all_notes)],
-        states={
-            FIRST: [
-                CallbackQueryHandler(open, pattern='^' + "open" + '$'),
-                CallbackQueryHandler(open, pattern='^' + "back" + '$')
-            ],
-        },
-        fallbacks=[CommandHandler('read_all_notes', read_all_notes)],
-    )
     dp.add_handler(conv_handler)
     dp.add_handler(conv_handler2)
     dp.add_handler(conv_handler3)
-    dp.add_handler(conv_handler4)
+    dp.add_handler(CommandHandler('read_all_notes', read_all_notes))
+    dp.add_handler(CallbackQueryHandler(note_page_callback, pattern='^note#'))
     dp.add_handler(CommandHandler("weather", weather))
     dp.add_handler(CommandHandler("read_note", read_note))
     updater.start_polling()
@@ -211,26 +198,43 @@ def get_text(update, context):
 
 def read_all_notes(update, context):
     db_sess = db_session.create_session()
-    base = list(db_sess.query(Note.text, Note.date).filter(Note.username == update.message.from_user["username"]))
+    base_data = list(db_sess.query(Note.text, Note.date).filter(Note.username == update.message.from_user["username"]))
+    base = list(map(reformat, base_data))
     print(base)
     context.user_data['base'] = base
     c = len(base)
-    if c == 0:
-        update.message.reply_text("у вас нет записей")
-    elif c == 1:
-        update.message.reply_text(f"Запись от {base[0][1].strftime('%d/%m/%Y, %H:%M')}\n"
-                                  f"{base[0][0]}")
-    elif c <= 4:
-        keyboard = [[]]
-        for i in range(1, c + 1):
-            keyboard[0].append(InlineKeyboardButton(str(i), callback_data="open"))
-    elif c >= 4:
-        pass
-    reply_markup = InlineKeyboardMarkup(keyboard)
-    # Send message with text and appended InlineKeyboard
-    update.message.reply_text("Выберите запись", reply_markup=reply_markup)
-    # Tell ConversationHandler that we're in state `FIRST` now
-    return FIRST
+    paginator = InlineKeyboardPaginator(
+        len(base),
+        data_pattern='note#{page}'
+    )
+
+    update.message.reply_text(
+        text=base[0],
+        reply_markup=paginator.markup,
+        parse_mode='Markdown'
+    )
+
+
+def note_page_callback(update, context):
+    query = update.callback_query
+
+    query.answer()
+
+    base = context.user_data['base']
+
+    page = int(query.data.split('#')[1])
+
+    paginator = InlineKeyboardPaginator(
+        len(base),
+        current_page=page,
+        data_pattern='note#{page}'
+    )
+
+    query.edit_message_text(
+        text=base[page - 1],
+        reply_markup=paginator.markup,
+        parse_mode='Markdown'
+    )
 
 
 def open(update, context):
@@ -250,7 +254,7 @@ def open(update, context):
     query.edit_message_text(
         text=st, reply_markup=reply_markup
     )
-    return FIRST
+    return 0
 
 
 def read_note(update, context):
@@ -261,10 +265,14 @@ def read_note(update, context):
     base = list(db_sess.query(Note.text, Note.date).filter(Note.username == update.message.from_user["username"], Note.date >= dt, Note.date >= dt))
     for i in range(len(base)):
         context.bot.send_message(
-            text=f"""_Запись от {base[i][1].strftime('%d.%m.%Y, %H:%M')}_
-            \n-----------------------------\n{base[i][0]}""",
+            text=reformat(base[i]),
             parse_mode=telegram.ParseMode.MARKDOWN, chat_id=update.message.chat_id
         )
+
+
+def reformat(x):
+    return f"""_Запись от {x[1].strftime('%d.%m.%Y, %H:%M')}_
+            \n-----------------------------\n{x[0]}"""
 
 
 def settings(update, context):
