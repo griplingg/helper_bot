@@ -1,20 +1,55 @@
 from telegram.ext import Updater, MessageHandler, Filters
 from telegram.ext import CallbackContext, CommandHandler
 from telegram.ext import CommandHandler, ConversationHandler, CallbackQueryHandler
-from data import db_session
+from data import db_session, db_session_settings
 from data.citati import Citat
+from data.settings import Settings
 from telegram import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardButton, InlineKeyboardMarkup
 import random
 import requests
 import logging
+from sqlalchemy import func
 
 db_session.global_init("db/citati.db")
+db_session_settings.global_init("db/settings.db")
+
+db_sess = db_session_settings.create_session()
+dat = db_sess.query(func.count(Settings.id)).scalar()
+db_sess.close()
+if dat == 0:
+    db_sess = db_session_settings.create_session()
+    quote_settings = Settings(quote_author=True)
+    db_sess.add(quote_settings)
+    db_sess.commit()
+    db_sess.close()
+
+
 
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.DEBUG
 )
 
 logger = logging.getLogger(__name__)
+
+
+def quote_author():
+    db_sess = db_session_settings.create_session()
+    settings = db_sess.query(Settings).filter(Settings.id == 1).first()
+    print(settings.quote_author)
+    return settings.quote_author
+
+
+def bot_settings():
+    db_sess = db_session_settings.create_session()
+    settings = db_sess.query(Settings).filter(Settings.id == 1).first()
+    if settings.quote_author:
+        settings.quote_author = False
+        db_sess.commit()
+    else:
+        settings.quote_author = True
+        db_sess.commit()
+    db_sess.close()
+
 
 
 def main():
@@ -35,6 +70,7 @@ def main():
         entry_points=[CommandHandler('quote', quote)],
         states={
             2: [MessageHandler(Filters.text & ~Filters.command, add_quote, pass_user_data=True)],
+            3: [MessageHandler(Filters.text & ~Filters.command, add_author, pass_user_data=True)],
         },
         fallbacks=[CommandHandler('menu', menu)]
     )
@@ -62,6 +98,10 @@ def button(update, CallbackContext):
     reply_markup = InlineKeyboardMarkup(keyboard)
     callback = update.callback_query
     callback.answer()
+    if callback.data == 'author_change':
+        bot_settings()
+        callback.message.reply_text('успешно!',
+                                    reply_markup=reply_markup)
     if callback.data == 'about':
         callback.message.reply_text('этот бот умеет выполнять многие полезные задачи, '
                                     'подробнее о его функциях можно прочитать в разделе "помощь"',
@@ -129,7 +169,8 @@ def button(update, CallbackContext):
                                     "для вызова функции напишите: '/quote',\n",
                                     reply_markup=reply_markup)
     if callback.data == 'list_settings':
-        callback.message.reply_text("функция и ее описание скоро появятся 🔧",
+        callback.message.reply_text("Функция изменяет настройки показа автора при выводе цитат\n"
+                                    "для вызова функции напишите: '/settings'  и следуйте дальнейшим инструкциям",
                                     reply_markup=reply_markup)
     if callback.data == 'list_menu':
         callback.message.reply_text("Функция возвращения в основное меню\n"
@@ -171,9 +212,12 @@ def citati(update, context):
     print(context.user_data['locality'])
     if context.user_data['locality'] == 'текст':
         db_sess = db_session.create_session()
-        base = list(db_sess.query(Citat.name).all())
-        print(base)
-        update.message.reply_text(random.choice(base)[0], reply_markup=reply_markup)
+        base = list(db_sess.query(Citat.name, Citat.author).all())
+        newbase = random.choice(base)
+        if quote_author():
+            update.message.reply_text(newbase[0] + '\n ' + newbase[1], reply_markup=reply_markup)
+        else:
+            update.message.reply_text(newbase[0], reply_markup=reply_markup)
     elif context.user_data['locality'] == 'картинка':
         jp = open('images/c1.jpg', 'rb')
         context.bot.send_photo(
@@ -213,11 +257,24 @@ def add_quote(update, context):
         newquote = Citat(name=context.user_data['locality'])
         db_sess.add(newquote)
         db_sess.commit()
+        update.message.reply_text('введите автора')
+        return 3
+    except Exception:
+        update.message.reply_text('Попробуйте снова')
+        add_quote()
+
+
+def add_author(update, context):
+    try:
+        context.user_data['locality'] = update.message.text
+        db_sess = db_session.create_session()
+        author = db_sess.query(Citat).order_by(Citat.id)[-1]
+        author.author = context.user_data['locality']
+        db_sess.commit()
         update.message.reply_text('Успешно!')
         return ConversationHandler.END
     except Exception:
         update.message.reply_text('Попробуйте снова')
-        add_quote()
 
 
 def weather(update, context):
@@ -267,9 +324,10 @@ def weather(update, context):
 
 def settings(update, context):
     keyboard = [[
-        InlineKeyboardButton("в меню", callback_data='menu')]]
+        InlineKeyboardButton("в меню", callback_data='menu'),
+        InlineKeyboardButton("изменить", callback_data='author_change')]]
     reply_markup = InlineKeyboardMarkup(keyboard)
-    update.message.reply_text("функция  разработке", reply_markup=reply_markup)
+    update.message.reply_text("изменить отображение автора при выводе цитат:", reply_markup=reply_markup)
 
 
 if __name__ == '__main__':
