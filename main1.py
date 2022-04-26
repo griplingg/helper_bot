@@ -350,7 +350,6 @@ def add_timer(update, context, data):
 def task(context):
     job = context.job
     n = job.name
-    context.bot.send_message(job.context, text="оно работает просто не видно")
     db_sess = db_session.create_session()
     data = list(db_sess.query(Habit.question).filter(Habit.id == int(n)))[0][0]
     keyboard = [[
