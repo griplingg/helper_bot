@@ -24,7 +24,6 @@ if dat == 0:
     db_sess.close()
 
 
-
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.DEBUG
 )
@@ -49,6 +48,7 @@ def bot_settings():
         settings.quote_author = True
         db_sess.commit()
     db_sess.close()
+
 
 
 
@@ -79,8 +79,6 @@ def main():
     dp.add_handler(CommandHandler("weather", weather))
     updater.start_polling()
     updater.idle()
-
-
 def start(update, context):
     keyboard = [[
             InlineKeyboardButton("о боте", callback_data='about'),
@@ -219,7 +217,8 @@ def citati(update, context):
         else:
             update.message.reply_text(newbase[0], reply_markup=reply_markup)
     elif context.user_data['locality'] == 'картинка':
-        jp = open('images/c1.jpg', 'rb')
+        numb = str(random.randint(1, 4))
+        jp = open('images/с' + numb + '.jpg', 'rb')
         context.bot.send_photo(
             update.message.chat_id,
             jp)
@@ -327,7 +326,17 @@ def settings(update, context):
         InlineKeyboardButton("в меню", callback_data='menu'),
         InlineKeyboardButton("изменить", callback_data='author_change')]]
     reply_markup = InlineKeyboardMarkup(keyboard)
-    update.message.reply_text("изменить отображение автора при выводе цитат:", reply_markup=reply_markup)
+    db_sess = db_session_settings.create_session()
+    settings = db_sess.query(Settings).filter(Settings.id == 1).first()
+    if settings.quote_author:
+        settings_quote_author = 'отображать автора'
+    else:
+        settings_quote_author = 'не отображать автора'
+        db_sess.commit()
+    db_sess.close()
+    update.message.reply_text("изменить отображение автора при выводе цитат:\n"
+                              'текущая настройка: ' + settings_quote_author,
+                              reply_markup=reply_markup)
 
 
 if __name__ == '__main__':
