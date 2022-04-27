@@ -374,6 +374,7 @@ def settings(update, context):
                               'текущая настройка: ' + settings_quote_author,
                               reply_markup=reply_markup)
 
+
 def weather(update, context):
     city = context.args[0]
     api_server = "http://geocode-maps.yandex.ru/1.x/"
