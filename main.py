@@ -312,51 +312,6 @@ def add_author(update, context):
         update.message.reply_text('Попробуйте снова')
 
 
-def weather(update, context):
-    city = context.args[0]
-    api_server = "http://geocode-maps.yandex.ru/1.x/"
-    apikey = "40d1649f-0493-4b70-98ba-98533de7710b"
-    api_server_weather = "https://api.openweathermap.org/data/2.5/weather"
-    params = {
-        "apikey": apikey,
-        "geocode": city,
-        "format": "json"
-    }
-    response = requests.get(api_server, params=params)
-    if response:
-        json_response = response.json()
-        toponym = json_response["response"]["GeoObjectCollection"]["featureMember"][0]["GeoObject"]
-        toponym_coodrinates = toponym["Point"]["pos"]
-        long, lat = [float(a) for a in toponym_coodrinates.split(" ")]
-        params_weather = {
-            "lat": lat,
-            "lon": long,
-            "appid": "127ecd8394c0d718a9778cfbd957ff2d",
-            "lang": "ru",
-            "units": "metric"
-        }
-        response_w = requests.get(api_server_weather, params=params_weather)
-        if response_w:
-            json_response_w = response_w.json()
-            weather = json_response_w["weather"][0]['description']
-            temp = json_response_w["main"]["temp"]
-            temp_f = json_response_w["main"]["feels_like"]
-            wind = json_response_w["wind"]["speed"]
-            update.message.reply_text(f"За окном {weather}\n"
-                                      f"Температура воздуха {temp}, ощущается как {temp_f}\n"
-                                      f"Скорость ветра {wind}")
-        else:
-            update.message.reply_text("Ошибка выполнения запроса")
-            print("Ошибка выполнения запроса")
-            print(response)
-            print("Http статус:", response.status_code, "(", response.reason, ")")
-    else:
-        update.message.reply_text("Ошибка выполнения запроса")
-        print("Ошибка выполнения запроса")
-        print(response)
-        print("Http статус:", response.status_code, "(", response.reason, ")")
-
-
 def settings(update, context):
     keyboard = [[
         InlineKeyboardButton("в меню", callback_data='menu'),
