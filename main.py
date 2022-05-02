@@ -61,7 +61,7 @@ def bot_settings():
 def main():
     updater = Updater('5103219044:AAGIibAfCpvXjLp8el1qy9T67bctCZj84iQ', use_context=True)
     dp = updater.dispatcher
-    dp.add_handler(CallbackQueryHandler(button))
+    #dp.add_handler(CallbackQueryHandler(button))
     dp.add_handler(CommandHandler("settings", settings))
     dp.add_handler(CommandHandler("start", start))
     dp.add_handler(CommandHandler("help", help))
@@ -104,7 +104,7 @@ def main():
     dp.add_handler(conv_handler2)
     dp.add_handler(conv_handler3)
     dp.add_handler(conv_handler4)
-    dp.add_handler(CallbackQueryHandler(tracking))
+    dp.add_handler(CallbackQueryHandler(tracking, pattern="^answer#"))
     dp.add_handler(CommandHandler('read_all_notes', read_all_notes))
     dp.add_handler(CallbackQueryHandler(note_page_callback, pattern='^note#'))
     dp.add_handler(CommandHandler("weather", weather))
@@ -563,8 +563,8 @@ def task(context):
     db_sess = db_session.create_session()
     data = list(db_sess.query(Habit.question).filter(Habit.id == int(n)))[0][0]
     keyboard = [[
-        InlineKeyboardButton("Да", callback_data=f'yes{n}'),
-        InlineKeyboardButton("Нет", callback_data=f'no{n}')]]
+        InlineKeyboardButton("Да", callback_data=f'answer#{n}/1'),
+        InlineKeyboardButton("Нет", callback_data=f'answer#{n}/0')]]
     reply_markup = InlineKeyboardMarkup(keyboard)
     context.bot.send_message(job.context, text=data, reply_markup=reply_markup)
 
@@ -574,12 +574,14 @@ def tracking(update, context):
     callback.answer()
     db_sess = db_session.create_session()
     now = datetime.date.today()
-    if callback.data[:3] == 'yes':
-        new = Tracking(date=now, done=True, habit_id=int(callback.data[3:]))
+    a = callback.data.split('#')[1]
+    answ = int(a.split('/')[1])
+    if answ == 1:
+        new = Tracking(date=now, done=True, habit_id=int(a[0]))
         db_sess.add(new)
         db_sess.commit()
     else:
-        new = Tracking(date=now, done=False, habit_id=int(callback.data[2:]))
+        new = Tracking(date=now, done=False, habit_id=int(a[0]))
         db_sess.add(new)
         db_sess.commit()
 
