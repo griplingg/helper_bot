@@ -143,19 +143,37 @@ def button(update, CallbackContext):
             InlineKeyboardButton("погода", callback_data='help_weather'),
             InlineKeyboardButton("заметки", callback_data='help_notes'),
             InlineKeyboardButton("мотивация", callback_data='help_motivation'),
+            InlineKeyboardButton("мотивация", callback_data='help_read_all_notes'),
+            InlineKeyboardButton("мотивация", callback_data='help_notes'),
+            InlineKeyboardButton("мотивация", callback_data='help_tracker'),
             InlineKeyboardButton("добавить цитату", callback_data='help_quote')]]
         reply_markup3 = InlineKeyboardMarkup(keyboard3)
         callback = update.callback_query
         callback.answer()
         callback.message.reply_text('Выберите функцию c которой нужна помощь:', reply_markup=reply_markup3)
+    if callback.data == 'help_read_all_notes':
+        callback.message.reply_text("Функция позволит прочесть все заметки\n"
+                                    "для вызова функции напишите: '/read_all_notes',\n"
+                                    "если функция не отвечает, убедитесь, что вы вводили заметки",
+                                    reply_markup=reply_markup)
+    if callback.data == 'help_notes':
+        callback.message.reply_text("Функция позволит создать новую заметку\n"
+                                    "для вызова функции напишите: '/new_note',\n"
+                                    "следуйте дальнейшим инструкциям"
+                                    "для сохранения заметки вызовите /save_note",
+                                    reply_markup=reply_markup)
+    if callback.data == 'help_tracker':
+        callback.message.reply_text("Функция позволит создать трекер привычек\n"
+                                    "для вызова функции напишите: '/add_tracker',\n"
+                                    "следуйте дальнейшим инструкциям"
+                                    "если функция не работает, убедитесь, что ввели верный часовой формат",
+                                    reply_markup=reply_markup)
     if callback.data == 'help_weather':
         callback.message.reply_text("для вызова функции напишите: '/weather ваш город',\n"
                                     "например:  '/weather Владимир' \n"
                                     "если функция не отвечает убедитесь, что вы ввели название города \n"
                                     "если функция не отвечает убедитесь в правильности вызова",
                                     reply_markup=reply_markup)
-    if callback.data == 'help_notes':
-        callback.message.reply_text("описание скоро появится", reply_markup=reply_markup)
     if callback.data == 'help_motivation':
         callback.message.reply_text("для вызова функции напишите: '/motivation'  и следуйте дальнейшим инструкциям,\n"
                                     "если функция не отвечает убедитесь в правильности вызова\n"
@@ -173,6 +191,8 @@ def button(update, CallbackContext):
         keyboard2 = [[
             InlineKeyboardButton("погода", callback_data='list_weather'),
             InlineKeyboardButton("заметки", callback_data='list_notes'),
+            InlineKeyboardButton("трекер привычек", callback_data='list_tracker'),
+            InlineKeyboardButton("прочитать все заметки", callback_data='list_read_all_notes'),
             InlineKeyboardButton("мотивация", callback_data='list_motivation'),
             InlineKeyboardButton("добавить цитату", callback_data='list_quote'),
             InlineKeyboardButton("меню", callback_data='list_menu'),
@@ -187,8 +207,20 @@ def button(update, CallbackContext):
                                     "для вызова функции напишите: '/weather ваш город',\n"
                                     "например:  '/weather Владимир'",
                                     reply_markup=reply_markup)
+    if callback.data == 'list_read_all_notes':
+        callback.message.reply_text("Функция позволит прочесть все заметки\n"
+                                    "для вызова функции напишите: '/read_all_notes',\n",
+                                    reply_markup=reply_markup)
     if callback.data == 'list_notes':
-        callback.message.reply_text("описание скоро появится",
+        callback.message.reply_text("Функция позволит создать новую заметку\n"
+                                    "для вызова функции напишите: '/new_note',\n"
+                                    "следуйте дальнейшим инструкциям"
+                                    "для сохранения заметки вызовите /save_note",
+                                    reply_markup=reply_markup)
+    if callback.data == 'list_tracker':
+        callback.message.reply_text("Функция позволит создать трекер привычек\n"
+                                    "для вызова функции напишите: '/add_tracker',\n"
+                                    "следуйте дальнейшим инструкциям",
                                     reply_markup=reply_markup)
     if callback.data == 'list_motivation':
         callback.message.reply_text("Функция выдает случайную цитату из списка\n"
