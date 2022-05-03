@@ -144,9 +144,9 @@ def button(update, CallbackContext):
             InlineKeyboardButton("погода", callback_data='button#help_weather'),
             InlineKeyboardButton("заметки", callback_data='button#help_notes'),
             InlineKeyboardButton("мотивация", callback_data='button#help_motivation'),
-            InlineKeyboardButton("мотивация", callback_data='button#help_read_all_notes'),
-            InlineKeyboardButton("мотивация", callback_data='button#help_notes'),
-            InlineKeyboardButton("мотивация", callback_data='button#help_tracker'),
+            InlineKeyboardButton("прочитать все заметки", callback_data='button#help_read_all_notes'),
+            InlineKeyboardButton("заметки", callback_data='button#help_notes'),
+            InlineKeyboardButton("трекер привычек", callback_data='button#help_tracker'),
             InlineKeyboardButton("добавить цитату", callback_data='button#help_quote')]]
         reply_markup3 = InlineKeyboardMarkup(keyboard3)
         callback = update.callback_query
