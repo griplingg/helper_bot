@@ -64,6 +64,7 @@ def main():
     dp.add_handler(CommandHandler("settings", settings))
     dp.add_handler(CommandHandler("start", start))
     dp.add_handler(CommandHandler("help", help))
+    dp.add_handler(CommandHandler("check_habit_week", check_habit_week))
     conv_handler = ConversationHandler(
         entry_points=[CommandHandler('motivation', motivation)],
         states={
@@ -499,29 +500,12 @@ def note_page_callback(update, context):
     )
 
 
-def open(update, context):
-    query = update.callback_query
-    base = context.user_data['base']
-    query.answer()
-    st = f"Запись от {base[0][1].strftime('%d/%m/%Y, %H:%M')}\n{base[0][0]}"
-    keyboard = [
-        [
-            InlineKeyboardButton("назад", callback_data="back"),
-        ]
-    ]
-    reply_markup = InlineKeyboardMarkup(keyboard)
-    query.edit_message_text(
-        text=st, reply_markup=reply_markup
-    )
-    return 0
-
-
 def read_note(update, context):
     date = [int(x) for x in context.args[0].split('.')]
     dt = datetime.datetime(date[2], date[1], date[0], 0, 0, 0)
     dtm = datetime.datetime(date[2], date[1], date[0], 23, 59, 59, 0)
     db_sess = db_session.create_session()
-    base = list(db_sess.query(Note.text, Note.date).filter(Note.username == update.message.from_user["username"], Note.date >= dt, Note.date >= dt))
+    base = list(db_sess.query(Note.text, Note.date).filter(Note.username == update.message.from_user["username"], Note.date >= dt, Note.date <= dtm))
     for i in range(len(base)):
         context.bot.send_message(
             text=reformat(base[i]),
@@ -624,6 +608,38 @@ def unset(update, context):
     job_removed = remove_job_if_exists(str(chat_id), context)
     text = 'Таймер отменен!' if job_removed else 'У вас нет активных таймеров'
     update.message.reply_text(text)
+
+
+def check_habit_week(update, context):
+    dates = []
+    td = datetime.datetime.today()
+    td = td.replace(hour=0, minute=0, second=0, microsecond=0)
+    timed = datetime.timedelta(hours=23, minutes=59, seconds=59)
+    for i in range(7):
+        day = td - datetime.timedelta(i)
+        dates.append(day)
+    dates = dates[::-1]
+    r = ''
+    db_sess = db_session.create_session()
+    base = list(db_sess.query(Habit.habit, Habit.id).filter(Habit.username == update.message.from_user["username"]))
+    for x in base:
+        r += x[0]
+        r += '\n'
+        dates_str = [x.strftime('%d.%m') for x in dates]
+        r = r + '\t'.join(dates_str) + '\n  '
+        for y in dates:
+            done = list(db_sess.query(Tracking.done).filter(Tracking.habit_id == x[1],
+                                                            Tracking.date >= y, Tracking.date <= y + timed))
+            print(done)
+            if done == []:
+                r += "&#11036;"
+            elif done[0][0]:
+                r += "&#10004;"
+            elif not done[0][0]:
+                r += "&#10006;"
+            r += "      "
+        r += '\n'
+    update.message.reply_text(r, parse_mode="HTML")
 
 
 def stop():
