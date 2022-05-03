@@ -1,5 +1,4 @@
 import datetime
-
 import telegram
 from telegram.ext import Updater, MessageHandler, Filters
 from telegram.ext import CommandHandler, ConversationHandler, CallbackQueryHandler
@@ -143,9 +142,9 @@ def button(update, CallbackContext):
             InlineKeyboardButton("погода", callback_data='button#help_weather'),
             InlineKeyboardButton("заметки", callback_data='button#help_notes'),
             InlineKeyboardButton("мотивация", callback_data='button#help_motivation'),
-            InlineKeyboardButton("мотивация", callback_data='button#help_read_all_notes'),
-            InlineKeyboardButton("мотивация", callback_data='button#help_notes'),
-            InlineKeyboardButton("мотивация", callback_data='button#help_tracker'),
+            InlineKeyboardButton("прочитать все заметки", callback_data='button#help_read_all_notes'),
+            InlineKeyboardButton("заметки", callback_data='button#help_notes'),
+            InlineKeyboardButton("трекер привычек", callback_data='button#help_tracker'),
             InlineKeyboardButton("добавить цитату", callback_data='button#help_quote')]]
         reply_markup3 = InlineKeyboardMarkup(keyboard3)
         callback = update.callback_query
@@ -270,7 +269,7 @@ def menu(update, context):
 
 def citati(update, context):
     keyboard = [[
-        InlineKeyboardButton("в меню", callback_data='menu')]]
+        InlineKeyboardButton("в меню", callback_data='button#menu')]]
     reply_markup = InlineKeyboardMarkup(keyboard)
     context.user_data['locality'] = update.message.text
     print(context.user_data['locality'])
@@ -298,7 +297,7 @@ def citati(update, context):
 
 def motivation(update, context):
     keyboard = [[
-        InlineKeyboardButton("в меню", callback_data='menu')]]
+        InlineKeyboardButton("в меню", callback_data='button#menu')]]
     reply_markup = InlineKeyboardMarkup(keyboard)
     update.message.reply_text(
         "Если хотите получить текстовую цитату, то введите 'текст',\n"
@@ -308,7 +307,7 @@ def motivation(update, context):
 
 def quote(update, context):
     keyboard = [[
-        InlineKeyboardButton("в меню", callback_data='menu')]]
+        InlineKeyboardButton("в меню", callback_data='button#menu')]]
     reply_markup = InlineKeyboardMarkup(keyboard)
     update.message.reply_text('Пришлите текст цитаты, чтобы добавить ее в базу',
                               reply_markup=reply_markup)
@@ -420,8 +419,8 @@ def weather(update, context):
 
 def settings(update, context):
     keyboard = [[
-        InlineKeyboardButton("в меню", callback_data='menu'),
-        InlineKeyboardButton("изменить", callback_data='author_change')]]
+        InlineKeyboardButton("в меню", callback_data='button#menu'),
+        InlineKeyboardButton("изменить", callback_data='button#author_change')]]
     reply_markup = InlineKeyboardMarkup(keyboard)
     db_sess = db_session_settings.create_session()
     settings = db_sess.query(Settings).filter(Settings.id == 1).first()
