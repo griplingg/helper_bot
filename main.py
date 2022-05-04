@@ -1,7 +1,6 @@
 import datetime
 import telegram
-from telegram.ext import Updater, MessageHandler, Filters, CallbackQueryHandler
-from telegram.ext import CallbackContext, CommandHandler
+from telegram.ext import Updater, MessageHandler, Filters
 from telegram.ext import CommandHandler, ConversationHandler, CallbackQueryHandler
 from data.citati import Citat
 from data.notes import Note
@@ -13,12 +12,11 @@ import logging
 from telegram_bot_pagination import InlineKeyboardPaginator
 from data import db_session, db_session_settings
 from data.settings import Settings
-from telegram import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from sqlalchemy import func
 
 db_session.global_init("db/citati.db")
 db_session_settings.global_init("db/settings.db")
-db_session.global_init("db/notes.db")
 
 db_sess = db_session_settings.create_session()
 dat = db_sess.query(func.count(Settings.id)).scalar()
@@ -465,22 +463,27 @@ def get_text(update, context):
 
 
 def read_all_notes(update, context):
-    db_sess = db_session.create_session()
-    base_data = list(db_sess.query(Note.text, Note.date).filter(Note.username == update.message.from_user["username"]))
-    base = list(map(reformat, base_data))
-    print(base)
-    context.user_data['base'] = base
-    c = len(base)
-    paginator = InlineKeyboardPaginator(
-        len(base),
-        data_pattern='note#{page}'
-    )
+    try:
+        db_sess = db_session.create_session()
+        base_data = list(db_sess.query(Note.text,
+                                       Note.date).filter(Note.username == update.message.from_user["username"]))
+        base = list(map(reformat, base_data))
+        if len(base) == 0:
+            update.message.reply_text("У вас нет заметок")
+        else:
+            context.user_data['base'] = base
+            paginator = InlineKeyboardPaginator(
+                len(base),
+                data_pattern='note#{page}'
+            )
 
-    update.message.reply_text(
-        text=base[0],
-        reply_markup=paginator.markup,
-        parse_mode='Markdown'
-    )
+            update.message.reply_text(
+                text=base[0],
+                reply_markup=paginator.markup,
+                parse_mode='Markdown'
+            )
+    except Exception:
+        update.message.reply_text("Непредвиденная ошибка. Попробуйте снова")
 
 
 def note_page_callback(update, context):
@@ -506,16 +509,23 @@ def note_page_callback(update, context):
 
 
 def read_note(update, context):
-    date = [int(x) for x in context.args[0].split('.')]
-    dt = datetime.datetime(date[2], date[1], date[0], 0, 0, 0)
-    dtm = datetime.datetime(date[2], date[1], date[0], 23, 59, 59, 0)
-    db_sess = db_session.create_session()
-    base = list(db_sess.query(Note.text, Note.date).filter(Note.username == update.message.from_user["username"], Note.date >= dt, Note.date <= dtm))
-    for i in range(len(base)):
-        context.bot.send_message(
-            text=reformat(base[i]),
-            parse_mode=telegram.ParseMode.MARKDOWN, chat_id=update.message.chat_id
-        )
+    try:
+        date = [int(x) for x in context.args[0].split('.')]
+        dt = datetime.datetime(date[2], date[1], date[0], 0, 0, 0)
+        dtm = datetime.datetime(date[2], date[1], date[0], 23, 59, 59, 0)
+        db_sess = db_session.create_session()
+        base = list(db_sess.query(Note.text, Note.date).filter(Note.username == update.message.from_user["username"],
+                                                               Note.date >= dt, Note.date <= dtm))
+        if base == []:
+            update.message.reply_text("Заметок за данный день не найдено")
+        else:
+            for i in range(len(base)):
+                context.bot.send_message(
+                    text=reformat(base[i]),
+                    parse_mode=telegram.ParseMode.MARKDOWN, chat_id=update.message.chat_id
+                )
+    except Exception:
+        update.message.reply_text("Ошибка. Использование: /read_note дд.мм.гггг")
 
 
 def reformat(x):
@@ -565,6 +575,8 @@ def remove_job_if_exists(name, context):
 def add_timer(update, context, data):
     db_sess = db_session.create_session()
     time = [int(x) for x in data[2].split(':')]
+    if time[0] < 3:
+        time[0] = time[0] - 3 + 24
     dt = datetime.time(time[0] - 3, time[1])
     new = Habit(habit=data[0], question=data[1], time=dt, username=update.message.from_user["username"])
     db_sess.add(new)
@@ -575,19 +587,21 @@ def add_timer(update, context, data):
         data = list(db_sess.query(Habit.id).filter(Habit.username == update.message.from_user["username"]))[-1][0]
         context.job_queue.run_daily(task, dt, context=chat_id, name=str(data))
     except (IndexError, ValueError):
-        update.message.reply_text('Использование: /set <секунд>')
+        update.message.reply_text('Непредвиденная ошибка')
 
 
 def task(context):
     job = context.job
     n = job.name
+    cnt = job.context
+
     db_sess = db_session.create_session()
     data = list(db_sess.query(Habit.question).filter(Habit.id == int(n)))[0][0]
     keyboard = [[
         InlineKeyboardButton("Да", callback_data=f'answer#{n}/1'),
         InlineKeyboardButton("Нет", callback_data=f'answer#{n}/0')]]
     reply_markup = InlineKeyboardMarkup(keyboard)
-    context.bot.send_message(job.context, text=data, reply_markup=reply_markup)
+    context.bot.send_message(cnt, text=data, reply_markup=reply_markup)
 
 
 def tracking(update, context):
@@ -601,10 +615,14 @@ def tracking(update, context):
         new = Tracking(date=now, done=True, habit_id=int(a[0]))
         db_sess.add(new)
         db_sess.commit()
+        context.bot.edit_message_text(chat_id=callback.message.chat_id, message_id=callback.message.message_id,
+                                      text="Вы молодец!")
     else:
         new = Tracking(date=now, done=False, habit_id=int(a[0]))
         db_sess.add(new)
         db_sess.commit()
+        context.bot.edit_message_text(chat_id=callback.message.chat_id, message_id=callback.message.message_id,
+                                      text="Принято")
 
 
 def unset(update, context):
@@ -616,35 +634,41 @@ def unset(update, context):
 
 
 def check_habit_week(update, context):
-    dates = []
-    td = datetime.datetime.today()
-    td = td.replace(hour=0, minute=0, second=0, microsecond=0)
-    timed = datetime.timedelta(hours=23, minutes=59, seconds=59)
-    for i in range(7):
-        day = td - datetime.timedelta(i)
-        dates.append(day)
-    dates = dates[::-1]
-    r = ''
-    db_sess = db_session.create_session()
-    base = list(db_sess.query(Habit.habit, Habit.id).filter(Habit.username == update.message.from_user["username"]))
-    for x in base:
-        r += x[0]
-        r += '\n'
-        dates_str = [x.strftime('%d.%m') for x in dates]
-        r = r + '\t'.join(dates_str) + '\n  '
-        for y in dates:
-            done = list(db_sess.query(Tracking.done).filter(Tracking.habit_id == x[1],
-                                                            Tracking.date >= y, Tracking.date <= y + timed))
-            print(done)
-            if done == []:
-                r += "&#11036;"
-            elif done[0][0]:
-                r += "&#10004;"
-            elif not done[0][0]:
-                r += "&#10006;"
-            r += "      "
-        r += '\n'
-    update.message.reply_text(r, parse_mode="HTML")
+    try:
+        dates = []
+        td = datetime.datetime.today()
+        td = td.replace(hour=0, minute=0, second=0, microsecond=0)
+        timed = datetime.timedelta(hours=23, minutes=59, seconds=59)
+        for i in range(7):
+            day = td - datetime.timedelta(i)
+            dates.append(day)
+        dates = dates[::-1]
+        r = ''
+        db_sess = db_session.create_session()
+        base = list(db_sess.query(Habit.habit, Habit.id).filter(Habit.username == update.message.from_user["username"]))
+        if not base:
+            update.message.reply_text("У вас нет трекеров привычек")
+        else:
+            for x in base:
+                r += x[0]
+                r += '\n'
+                dates_str = [x.strftime('%d.%m') for x in dates]
+                r = r + '\t'.join(dates_str) + '\n  '
+                for y in dates:
+                    done = list(db_sess.query(Tracking.done).filter(Tracking.habit_id == x[1],
+                                                                    Tracking.date >= y, Tracking.date <= y + timed))
+
+                    if done == []:
+                        r += "&#11036;"
+                    elif done[0][0]:
+                        r += "&#10004;"
+                    elif not done[0][0]:
+                        r += "&#10006;"
+                    r += "     "
+                r += '\n'
+            update.message.reply_text(r, parse_mode="HTML")
+    except Exception:
+        update.message.reply_text("Непредвиденная ошибка. Попробуйте еще раз")
 
 
 def stop():
