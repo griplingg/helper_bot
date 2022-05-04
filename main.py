@@ -106,6 +106,7 @@ def main():
     dp.add_handler(conv_handler4)
     dp.add_handler(CallbackQueryHandler(tracking, pattern="^answer#"))
     dp.add_handler(CommandHandler('read_all_notes', read_all_notes))
+    dp.add_handler(CommandHandler('menu', menu))
     dp.add_handler(CallbackQueryHandler(note_page_callback, pattern='^note#'))
     dp.add_handler(CommandHandler("weather", weather))
     dp.add_handler(CommandHandler("read_note", read_note))
@@ -116,8 +117,8 @@ def main():
 def start(update, context):
     keyboard = [[
             InlineKeyboardButton("о боте", callback_data='button#about'),
-            InlineKeyboardButton("помощь", callback_data='button#help'),
-            InlineKeyboardButton("список функций", callback_data='button#function_list')]]
+            InlineKeyboardButton("помощь", callback_data='button#help')],
+            [InlineKeyboardButton("список функций", callback_data='button#function_list')]]
 
     reply_markup = InlineKeyboardMarkup(keyboard)
 
@@ -142,12 +143,14 @@ def button(update, CallbackContext):
     if a == 'help':
         keyboard3 = [[
             InlineKeyboardButton("погода", callback_data='button#help_weather'),
-            InlineKeyboardButton("заметки", callback_data='button#help_notes'),
-            InlineKeyboardButton("мотивация", callback_data='button#help_motivation'),
-            InlineKeyboardButton("прочитать все заметки", callback_data='button#help_read_all_notes'),
-            InlineKeyboardButton("заметки", callback_data='button#help_notes'),
-            InlineKeyboardButton("трекер привычек", callback_data='button#help_tracker'),
-            InlineKeyboardButton("добавить цитату", callback_data='button#help_quote')]]
+            InlineKeyboardButton("заметки", callback_data='button#help_notes')],
+            [
+             InlineKeyboardButton("мотивация", callback_data='button#help_motivation')],
+             [InlineKeyboardButton("прочитать все заметки", callback_data='button#help_read_all_notes')],
+             [InlineKeyboardButton("заметки", callback_data='button#help_notes')],
+            [
+             InlineKeyboardButton("трекер привычек", callback_data='button#help_tracker')],
+             [InlineKeyboardButton("добавить цитату", callback_data='button#help_quote')]]
         reply_markup3 = InlineKeyboardMarkup(keyboard3)
         callback = update.callback_query
         callback.answer()
@@ -191,13 +194,15 @@ def button(update, CallbackContext):
     if a == 'function_list':
         keyboard2 = [[
             InlineKeyboardButton("погода", callback_data='button#list_weather'),
-            InlineKeyboardButton("заметки", callback_data='button#list_notes'),
-            InlineKeyboardButton("трекер привычек", callback_data='button#list_tracker'),
-            InlineKeyboardButton("прочитать все заметки", callback_data='button#list_read_all_notes'),
-            InlineKeyboardButton("мотивация", callback_data='button#list_motivation'),
-            InlineKeyboardButton("добавить цитату", callback_data='button#list_quote'),
-            InlineKeyboardButton("меню", callback_data='button#list_menu'),
-            InlineKeyboardButton("настройки", callback_data='button#list_settings')]]
+            InlineKeyboardButton("заметки", callback_data='button#list_notes')],
+            [
+            InlineKeyboardButton("трекер привычек", callback_data='button#list_tracker')],
+            [InlineKeyboardButton("прочитать все заметки", callback_data='button#list_read_all_notes')],
+            [InlineKeyboardButton("мотивация", callback_data='button#list_motivation')],
+            [
+            InlineKeyboardButton("добавить цитату", callback_data='button#list_quote')],
+            [InlineKeyboardButton("меню", callback_data='button#list_menu')],
+            [InlineKeyboardButton("настройки", callback_data='button#list_settings')]]
         reply_markup2 = InlineKeyboardMarkup(keyboard2)
         callback = update.callback_query
         callback.answer()
@@ -244,8 +249,8 @@ def button(update, CallbackContext):
     if a == 'menu':
         keyboard1 = [[
             InlineKeyboardButton("о боте", callback_data='button#about'),
-            InlineKeyboardButton("помощь", callback_data='button#help'),
-            InlineKeyboardButton("список функций", callback_data='button#function_list')]]
+            InlineKeyboardButton("помощь", callback_data='button#help')],
+            [InlineKeyboardButton("список функций", callback_data='button#function_list')]]
         reply_markup1 = InlineKeyboardMarkup(keyboard1)
         callback = update.callback_query
         callback.answer()
